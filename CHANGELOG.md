@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+- Reject malformed Go before evaluating lesson objectives or awarding mastery
+- Added specific feedback for syntax, unchanged walkthroughs, and missing target concepts
+- Added regression coverage for malformed package/import/function syntax and unbalanced delimiters
+
 ## 1.1.0
 
 - Added a premium academy home with course metrics, path progress, quick resume, and a privacy promise

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { lessons, totalMinutes, tracks } from './curriculum.js'
 import { clearProgress, emptyProgress, exportProgress, loadProgress, saveProgress } from './progress.js'
+import { validateSubmission } from './validation.js'
 import logo from './assets/daemoncore-go-logo.png'
 
 const achievements = [
@@ -38,6 +39,7 @@ function App() {
   const [code, setCode] = useState(lesson.code)
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('idle')
+  const [feedback, setFeedback] = useState('')
   const [hint, setHint] = useState(false)
   const [panel, setPanel] = useState(null)
   const [focus, setFocus] = useState(false)
@@ -56,16 +58,16 @@ function App() {
   function choose(id) {
     const selected = lessons.find((item) => item.id === id)
     if (!selected) return
-    setLessonId(id); setTrackId(selected.trackId); setCode(selected.code); setStatus('idle'); setHint(false); setView('lesson')
+    setLessonId(id); setTrackId(selected.trackId); setCode(selected.code); setStatus('idle'); setFeedback(''); setHint(false); setView('lesson')
     setProgress((current) => ({ ...current, lastLesson: id }))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function validate() {
-    const normalize = (value) => value.replace(/\s+/g, ' ').trim().toLowerCase()
-    const changed = normalize(code) !== normalize(lesson.code)
-    const passed = changed && code.toLowerCase().includes(lesson.expected.toLowerCase())
-    setStatus(passed ? 'passed' : 'review')
+    const result = validateSubmission({ source: code, walkthrough: lesson.code, expected: lesson.expected })
+    const passed = result.passed
+    setStatus(result.kind)
+    setFeedback(result.message)
     setProgress((current) => {
       const firstPass = passed && !current.completed.includes(lesson.id)
       const today = new Date().toISOString().slice(0, 10)
@@ -75,7 +77,7 @@ function App() {
         ...current,
         completed: firstPass ? [...current.completed, lesson.id] : current.completed,
         attempts: { ...current.attempts, [lesson.id]: (current.attempts[lesson.id] ?? 0) + 1 },
-        xp: current.xp + (firstPass ? 100 : 0), streak, lastStudyDate: today,
+        xp: current.xp + (firstPass ? 100 : 0), streak: passed ? streak : current.streak, lastStudyDate: passed ? today : current.lastStudyDate,
       }
     })
   }
@@ -113,7 +115,7 @@ function App() {
 
         <section className="roadmap" aria-label="Lesson sections">{lesson.sections.map((section, index) => <a key={section.name} href={`#section-${index + 1}`}><i>{index + 1}</i><span>{section.name}</span></a>)}</section>
 
-        <div className="lesson-body">{lesson.sections.map((section, index) => <section className={`content-section section-${index + 1}`} id={`section-${index + 1}`} key={section.name}><header><span>{String(index + 1).padStart(2, '0')} //</span><h3>{section.name}</h3></header><p>{section.body}</p>{index === 2 && <pre className="code-display"><header><span>main.go</span><button onClick={() => navigator.clipboard?.writeText(lesson.code)}>COPY</button></header><code>{lesson.code}</code></pre>}{index === 3 && <div className="lab"><header><span>main.go · YOUR WORKSPACE</span><span>EDIT · CHECK · REFINE</span></header><div className="editor-gutter" aria-hidden="true">{code.split('\n').map((_, line) => <span key={line}>{line + 1}</span>)}</div><textarea aria-label="Go code practice editor" value={code} onChange={(event) => { setCode(event.target.value); setStatus('idle') }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); validate() } if (event.key === 'Tab') { event.preventDefault(); const start = event.currentTarget.selectionStart; setCode(`${code.slice(0, start)}\t${code.slice(event.currentTarget.selectionEnd)}`); requestAnimationFrame(() => { event.currentTarget.selectionStart = event.currentTarget.selectionEnd = start + 1 }) } }} spellCheck="false" /><footer><button onClick={() => { setCode(lesson.code); setStatus('idle') }}>RESTORE EXAMPLE</button><span className="edit-state">{code === lesson.code ? 'MAKE A CHANGE TO BEGIN' : '● UNSAVED LAB CHANGE'}</span><button className="check" onClick={validate}>CHECK WORK <span>CTRL ↵</span></button></footer></div>}{index === 4 && <div className="mission"><span>MISSION</span><p>{lesson.task}</p></div>}{index === 5 && <button className="hint-button" onClick={() => setHint(!hint)}>{hint ? '− HIDE FIELD NOTE' : '+ OPEN FIELD NOTE'}</button>}{index === 5 && hint && <div className="hint"><b>FIELD NOTE</b><p>{lesson.hint}</p></div>}{index === 6 && <div className={`result ${status}`}><header><span className="terminal-dots"><i /><i /><i /></span><span>MASTERY CONSOLE</span></header><b>{status === 'passed' ? '✓ CHECK PASSED' : status === 'review' ? '↻ REVISION REQUIRED' : '> AWAITING YOUR SUBMISSION'}</b><p>{status === 'passed' ? 'Concept detected. Your code differs from the walkthrough and the lesson objective is present. +100 XP on first mastery.' : status === 'review' ? code === lesson.code ? 'The walkthrough is a reference, not the answer. Make a meaningful change that completes the mission, then check again.' : `The expected concept is not visible yet. Re-read the mission and field note; your solution should demonstrate “${lesson.expected}”.` : 'The check verifies that you changed the walkthrough and applied the lesson’s target construct. Use your local Go toolchain for compiler-level proof.'}</p></div>}{index === 7 && <textarea className="notes" value={progress.notes[lesson.id] ?? ''} onChange={(event) => note(event.target.value)} placeholder="What clicked? What would you explain to another beginner? Saved only on this device." aria-label="Personal lesson notes" />}</section>)}</div>
+        <div className="lesson-body">{lesson.sections.map((section, index) => <section className={`content-section section-${index + 1}`} id={`section-${index + 1}`} key={section.name}><header><span>{String(index + 1).padStart(2, '0')} //</span><h3>{section.name}</h3></header><p>{section.body}</p>{index === 2 && <pre className="code-display"><header><span>main.go</span><button onClick={() => navigator.clipboard?.writeText(lesson.code)}>COPY</button></header><code>{lesson.code}</code></pre>}{index === 3 && <div className="lab"><header><span>main.go · YOUR WORKSPACE</span><span>EDIT · CHECK · REFINE</span></header><div className="editor-gutter" aria-hidden="true">{code.split('\n').map((_, line) => <span key={line}>{line + 1}</span>)}</div><textarea aria-label="Go code practice editor" value={code} onChange={(event) => { setCode(event.target.value); setStatus('idle'); setFeedback('') }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); validate() } if (event.key === 'Tab') { event.preventDefault(); const start = event.currentTarget.selectionStart; setCode(`${code.slice(0, start)}\t${code.slice(event.currentTarget.selectionEnd)}`); requestAnimationFrame(() => { event.currentTarget.selectionStart = event.currentTarget.selectionEnd = start + 1 }) } }} spellCheck="false" /><footer><button onClick={() => { setCode(lesson.code); setStatus('idle'); setFeedback('') }}>RESTORE EXAMPLE</button><span className="edit-state">{code === lesson.code ? 'MAKE A CHANGE TO BEGIN' : '● UNSAVED LAB CHANGE'}</span><button className="check" onClick={validate}>CHECK WORK <span>CTRL ↵</span></button></footer></div>}{index === 4 && <div className="mission"><span>MISSION</span><p>{lesson.task}</p></div>}{index === 5 && <button className="hint-button" onClick={() => setHint(!hint)}>{hint ? '− HIDE FIELD NOTE' : '+ OPEN FIELD NOTE'}</button>}{index === 5 && hint && <div className="hint"><b>FIELD NOTE</b><p>{lesson.hint}</p></div>}{index === 6 && <div className={`result ${status}`}><header><span className="terminal-dots"><i /><i /><i /></span><span>MASTERY CONSOLE</span></header><b>{status === 'passed' ? '✓ CHECK PASSED' : status === 'syntax' ? '× SOURCE REJECTED' : status === 'idle' ? '> AWAITING YOUR SUBMISSION' : '↻ REVISION REQUIRED'}</b><p>{status === 'passed' ? 'Structure and lesson objective verified. +100 XP on first mastery.' : feedback || 'The check verifies basic Go structure, a meaningful edit, and the lesson’s target concept. Use your local Go toolchain for compiler-level proof.'}</p></div>}{index === 7 && <textarea className="notes" value={progress.notes[lesson.id] ?? ''} onChange={(event) => note(event.target.value)} placeholder="What clicked? What would you explain to another beginner? Saved only on this device." aria-label="Personal lesson notes" />}</section>)}</div>
 
         <footer className="lesson-footer"><div><span>LESSON STATUS</span><b>{complete ? 'MASTERED' : 'IN PROGRESS'}</b></div>{next ? <button disabled={!complete} onClick={() => choose(next.id)}>NEXT · {next.title.toUpperCase()} <span>→</span></button> : <div className="graduate">{complete ? '◆ GO GRADUATE' : 'COMPLETE THE FINAL CHECK'}</div>}</footer>
       </article>}
