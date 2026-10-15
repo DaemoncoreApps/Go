@@ -1,0 +1,42 @@
+{
+  "name": "daemoncore-academy-intro-to-go",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A premium, offline-first Go course for absolute beginners.",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "author": { "name": "DaemonCore Apps", "email": "DaemoncoreApps@users.noreply.github.com" },
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:web": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "desktop": "npm run build && electron .",
+    "check": "eslint src electron",
+    "test": "npm run icon && node --test tests/*.test.mjs && npm run check && npm run build",
+    "icon": "node scripts/generate-icons.mjs",
+    "package:win": "npm run icon && npm run build && electron-builder --win nsis --publish never",
+    "package:store": "npm run icon && npm run build && electron-builder --win appx --publish never"
+  },
+  "dependencies": { "@vitejs/plugin-react": "latest", "react": "latest", "react-dom": "latest", "vite": "latest" },
+  "devDependencies": { "@eslint/js": "latest", "concurrently": "latest", "electron": "latest", "electron-builder": "latest", "eslint": "latest", "eslint-plugin-react-hooks": "latest", "eslint-plugin-react-refresh": "latest", "globals": "latest", "png-to-ico": "^3.0.2", "sharp": "^0.35.4", "wait-on": "latest" },
+  "build": {
+    "appId": "DaemonCore.DaemonCoreAcademyIntrotoGo",
+    "productName": "DaemonCore Academy: Intro to Go",
+    "npmRebuild": false,
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "win": { "target": "nsis", "icon": "build/icon.ico", "artifactName": "DaemonCore-Intro-to-Go-Setup.${ext}" },
+    "appx": {
+      "identityName": "DaemonCore.DaemonCoreAcademyIntrotoGo",
+      "publisher": "CN=B7B53B09-651D-4171-90BE-4E9E1F5738BA",
+      "publisherDisplayName": "DaemonCore",
+      "displayName": "DaemonCore Academy: Intro to Go",
+      "applicationId": "IntrotoGo",
+      "languages": ["en-US"],
+      "artifactName": "DaemonCore-Intro-to-Go-${version}.${ext}"
+    },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": false, "createDesktopShortcut": true, "deleteAppDataOnUninstall": false, "uninstallDisplayName": "DaemonCore Academy: Intro to Go" }
+  }
+}
