@@ -6,7 +6,9 @@ A premium, offline-first Windows course that takes a complete beginner from inst
 
 - 100 lessons across 10 progressive learning paths
 - Eight teaching sections in every lesson: Orient, Understand, Walkthrough, Code Lab, Practice, Pitfalls, Checkpoint, and Carry Forward
-- Code labs, mastery checks, XP, streaks, achievements, bookmarks, personal notes, search, focus mode, and progress backup/restore
+- Guided first-run setup with a sustainable daily learning target
+- Premium academy dashboard with path-level progress and a one-click resume flow
+- Code labs with line numbers, edit-aware mastery checks, console feedback, XP, streaks, achievements, bookmarks, personal notes, search, focus mode, and progress backup/restore
 - No accounts, ads, analytics, remote content, or network requirement
 - Electron desktop packaging and Microsoft Store APPX packaging
 

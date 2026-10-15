@@ -2,7 +2,7 @@ const { app, BrowserWindow, protocol, shell } = require('electron')
 const { readFile } = require('node:fs/promises')
 const path = require('node:path')
 
-const isDev = !app.isPackaged
+const isDev = process.argv.includes('--dev')
 
 protocol.registerSchemesAsPrivileged([{
   scheme: 'daemoncore',
